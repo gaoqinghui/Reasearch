@@ -1,0 +1,607 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>MC_predict_VR</title><meta name="generator" content="MATLAB 8.6"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2017-09-14"><meta name="DC.source" content="MC_predict_VR.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#3">(1) estimate g_c or r_m of AR(1) and examine the AC of absolute residuals</a></li><li><a href="#4">(2) estimate g_c or r_m of AR(1)-GARCH(1,1)</a></li><li><a href="#5">(3) estimate prediction model of future valuation ratios</a></li><li><a href="#6">(4) simulate  GR from AR(1)-GARCH(1,1)</a></li><li><a href="#7">Simulate price-earing( price-dividend) ratio</a></li><li><a href="#8">Predict abs_eps</a></li><li><a href="#9">Robust check</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> [AR_GR, ARGARCH_GR, pred_VR, pred_eps, robust] = MC_predict_VR( VR_data, GR_data, mc_time, robust_check)
+</pre><pre class="codeinput"><span class="comment">% Summary of this function goes here</span>
+<span class="comment">%   VR for Valuation Ratio</span>
+<span class="comment">%   GR for growth rate of consumption or market return</span>
+<span class="comment">%   AR_GR is the estimation(coef, se, AC of abs_eps) for AR(1) of GR(growth rate)</span>
+<span class="comment">%   ARGARCH if the estimation(coef, se) for AR(1)-GARCH(1,1) of GR</span>
+<span class="comment">%</span>
+<span class="comment">% Output options:</span>
+<span class="comment">%</span>
+<span class="comment">%   AR_GR: the AR(1) model for GR(growth)</span>
+<span class="comment">%       _AR_GR.mdl: the estimation of AR_GR</span>
+<span class="comment">%       -AR_GR.coef: the estimate of the coef(const, AR(1))</span>
+<span class="comment">%       -AR_GR.se: the standard error of  the estimation(const, AR(1))</span>
+<span class="comment">%       -AR_GR.AC: the Autocorrelation of absolute eps in lag 1,4,8</span>
+<span class="comment">%       -AR_GR.Q: the lbqt result of absolute eps</span>
+<span class="comment">%           -AR_GR.Q.h: the hypothesis test result of lbqt</span>
+<span class="comment">%           -AR_GR.Q.p: the p-value result of lbqt</span>
+<span class="comment">%           -AR_GR.Q.stat: the Q-stat result of lbqt</span>
+<span class="comment">%       -AR_GR.eps</span>
+<span class="comment">%       -AR_GR.abs_eps_lag1,lag4,lag8,lag12</span>
+<span class="comment">%</span>
+<span class="comment">%   ARGARCH_GR: the AR(1)-GARCH(1,1) model for GR(growth)</span>
+<span class="comment">%       -ARGARCH_GR.coef: the estimate of the coef(const,AR(1)-GARCH(1,1),var_const,ARCH,GARCH)</span>
+<span class="comment">%       -ARGARCH_GR.se: the standard error of  the estimation(const,AR(1)-GARCH(1,1),var_const,ARCH,GARCH)</span>
+<span class="comment">%</span>
+<span class="comment">%</span>
+
+AR_mdl = arima(<span class="string">'ARLags'</span>, 1);
+ARGARCH_mdl = arima(<span class="string">'ARLags'</span>,1,<span class="string">'Variance'</span>,garch(1,1));
+</pre><h2>(1) estimate g_c or r_m of AR(1) and examine the AC of absolute residuals<a name="3"></a></h2><pre class="codeinput">[AR_GR.mdl, AR_GR.vcov] = estimate(AR_mdl, GR_data);
+AR_GR.coef = [AR_GR.mdl.Constant; AR_GR.mdl.AR{1}]; <span class="comment">% coef</span>
+AR_GR.se = sqrt([AR_GR.vcov(1,1); AR_GR.vcov(2,2)]); <span class="comment">% se</span>
+
+<span class="comment">% infer absolute residuals</span>
+[AR_GR.eps, AR_GR.v] = infer(AR_GR.mdl, GR_data);
+AR_GR.abs_eps = abs(AR_GR.eps);
+
+AC_AR = autocorr(AR_GR.abs_eps,8);
+AR_GR.AC = AC_AR([2,5,8]);
+[AR_GR.Q.h, AR_GR.Q.p, AR_GR.Q.stat] = lbqtest(abs(AR_GR.abs_eps),<span class="string">'lags'</span>,[1,4,8]);
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in MC_predict_VR (line 33)
+[AR_GR.mdl, AR_GR.vcov] = estimate(AR_mdl, GR_data);
+</pre><h2>(2) estimate g_c or r_m of AR(1)-GARCH(1,1)<a name="4"></a></h2><pre class="codeinput">[ARGARCH_GR.mdl, ARGARCH_GR.vcov] = estimate(ARGARCH_mdl, GR_data);
+ARGARCH_GR.coef = [ARGARCH_GR.mdl.Constant; ARGARCH_GR.mdl.AR{1}; ARGARCH_GR.mdl.Variance.Constant; ARGARCH_GR.mdl.Variance.ARCH{1}; ARGARCH_GR.mdl.Variance.GARCH{1}]; <span class="comment">% coef</span>
+ARGARCH_GR.se = sqrt([ARGARCH_GR.vcov(1,1); ARGARCH_GR.vcov(2,2);  ARGARCH_GR.vcov(3,3);  ARGARCH_GR.vcov(5,5);  ARGARCH_GR.vcov(4,4)]); <span class="comment">% se</span>
+[ARGARCH_GR.eps, ARGARCH_GR.v] = infer(ARGARCH_GR.mdl, GR_data);
+</pre><h2>(3) estimate prediction model of future valuation ratios<a name="5"></a></h2><pre class="codeinput"><span class="comment">% construct economic uncertainty</span>
+
+
+AR_GR.sigma_lag1 = [nan; gen_sigma_J(AR_GR.abs_eps, 1)];
+AR_GR.sigma_lag4 = [nan*ones(4,1); gen_sigma_J(AR_GR.abs_eps, 4)];
+AR_GR.sigma_lag8 = [nan*ones(8,1); gen_sigma_J(AR_GR.abs_eps, 8)];
+AR_GR.sigma_lag12 = [nan*ones(12,1); gen_sigma_J(AR_GR.abs_eps, 12)];
+
+pred_VR.lag1.mdl = fitlm(AR_GR.sigma_lag1,VR_data);
+pred_VR.lag4.mdl = fitlm(AR_GR.sigma_lag4,VR_data);
+pred_VR.lag8.mdl = fitlm(AR_GR.sigma_lag8,VR_data);
+
+pred_VR.lag1.b = pred_VR.lag1.mdl.Coefficients.Estimate(2);
+pred_VR.lag1.t = pred_VR.lag1.mdl.Coefficients.tStat(2);
+pred_VR.lag1.r_2 = pred_VR.lag1.mdl.Rsquared.Adjusted;
+
+pred_VR.lag4.b = pred_VR.lag4.mdl.Coefficients.Estimate(2);
+pred_VR.lag4.t = pred_VR.lag4.mdl.Coefficients.tStat(2);
+pred_VR.lag4.r_2 = pred_VR.lag4.mdl.Rsquared.Adjusted;
+
+pred_VR.lag8.b = pred_VR.lag8.mdl.Coefficients.Estimate(2);
+pred_VR.lag8.t = pred_VR.lag8.mdl.Coefficients.tStat(2);
+pred_VR.lag8.r_2 = pred_VR.lag8.mdl.Rsquared.Adjusted;
+</pre><h2>(4) simulate  GR from AR(1)-GARCH(1,1)<a name="6"></a></h2><pre class="codeinput">pred_VR.sim_GR = simulate(ARGARCH_GR.mdl,length(GR_data)-1, <span class="string">'Y0'</span>, GR_data(1), <span class="string">'E0'</span>, ARGARCH_GR.eps(1), <span class="string">'V0'</span>, ARGARCH_GR.v(1),<span class="string">'NumPaths'</span>,mc_time);
+pred_VR.sim_GR = [ones(1,mc_time) *GR_data(1); pred_VR.sim_GR];
+
+pred_VR.sim_abs_eps = ones(size(pred_VR.sim_GR))*nan;
+pred_VR.sim_v = pred_VR.sim_abs_eps;
+pred_VR.lag1.sim_sigma = pred_VR.sim_abs_eps;
+pred_VR.lag4.sim_sigma = pred_VR.sim_abs_eps;
+pred_VR.lag8.sim_sigma = pred_VR.sim_abs_eps;
+
+<span class="keyword">for</span> i = 1:mc_time
+    pred_VR.sim_abs_eps(:,i) = abs(infer(estimate(AR_mdl, pred_VR.sim_GR(:,i), <span class="string">'Display'</span>, <span class="string">'off'</span>), pred_VR.sim_GR(:,i)));
+    pred_VR.lag1.sim_sigma(:,i) = [nan; gen_sigma_J(pred_VR.sim_abs_eps(:,i), 1)];
+    pred_VR.lag4.sim_sigma(:,i) = [nan*ones(4,1); gen_sigma_J(pred_VR.sim_abs_eps(:,i), 4)];
+    pred_VR.lag8.sim_sigma(:,i) = [nan*ones(8,1); gen_sigma_J(pred_VR.sim_abs_eps(:,i), 8)];
+<span class="keyword">end</span>
+</pre><h2>Simulate price-earing( price-dividend) ratio<a name="7"></a></h2><pre class="codeinput">pred_VR.AR_VR.mdl = estimate(AR_mdl, VR_data, <span class="string">'Display'</span>, <span class="string">'off'</span>);
+[pred_VR.AR_VR.eps, pred_VR.AR_VR.v] = infer(pred_VR.AR_VR.mdl, VR_data);
+
+pred_VR.sim_VR = simulate(pred_VR.AR_VR.mdl, length(GR_data)-1,<span class="string">'Y0'</span>, VR_data(1), <span class="string">'E0'</span>, pred_VR.AR_VR.eps(1), <span class="string">'V0'</span>, pred_VR.AR_VR.v(1),<span class="string">'NumPaths'</span>,mc_time);
+pred_VR.sim_VR = [ones(1,mc_time)*VR_data(1); pred_VR.sim_VR];
+
+pred_VR.lag1.sim_t = pred_VR.lag1.mdl.Coefficients.Estimate(2);
+pred_VR.lag1.sim_r_2 = pred_VR.lag1.mdl.Coefficients.tStat(2);
+
+pred_VR.lag1.sim_t = nan*zeros(1,mc_time);
+pred_VR.lag4.sim_t = pred_VR.lag1.sim_t;
+pred_VR.lag8.sim_t = pred_VR.lag1.sim_t;
+
+pred_VR.lag1.sim_r_2 = pred_VR.lag1.sim_t;
+pred_VR.lag4.sim_r_2 = pred_VR.lag1.sim_t;
+pred_VR.lag8.sim_r_2 = pred_VR.lag1.sim_t;
+
+
+<span class="keyword">for</span> i = 1:mc_time
+    [pred_VR.lag1.sim_t(i), pred_VR.lag1.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.lag1.sim_sigma(:,i),pred_VR.sim_VR(:,i)));
+    [pred_VR.lag4.sim_t(i), pred_VR.lag4.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.lag4.sim_sigma(:,i),pred_VR.sim_VR(:,i)));
+    [pred_VR.lag8.sim_t(i), pred_VR.lag8.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.lag8.sim_sigma(:,i),pred_VR.sim_VR(:,i)));
+<span class="keyword">end</span>
+
+pred_VR.lag1.sim_t_2_5 = quantile(pred_VR.lag1.sim_t, 0.025);
+pred_VR.lag1.sim_t_5 = quantile(pred_VR.lag1.sim_t, 0.05);
+pred_VR.lag1.sim_r_2_95 = quantile(pred_VR.lag1.sim_r_2, 0.95);
+
+pred_VR.lag4.sim_t_2_5 = quantile(pred_VR.lag4.sim_t, 0.025);
+pred_VR.lag4.sim_t_5 = quantile(pred_VR.lag4.sim_t, 0.05);
+pred_VR.lag4.sim_r_2_95 = quantile(pred_VR.lag4.sim_r_2, 0.95);
+
+pred_VR.lag8.sim_t_2_5 = quantile(pred_VR.lag8.sim_t, 0.025);
+pred_VR.lag8.sim_t_5 = quantile(pred_VR.lag8.sim_t, 0.05);
+pred_VR.lag8.sim_r_2_95 = quantile(pred_VR.lag8.sim_r_2, 0.95);
+</pre><h2>Predict abs_eps<a name="8"></a></h2><pre class="codeinput">pred_eps.lag1.real_abs_eps = [AR_GR.abs_eps(2:end); nan];
+pred_eps.lag4.real_abs_eps = [AR_GR.abs_eps(5:end); ones(4,1)*nan];
+pred_eps.lag8.real_abs_eps = [AR_GR.abs_eps(9:end); ones(8,1)*nan];
+
+pred_eps.lag1.sim_abs_eps = [pred_VR.sim_abs_eps(2:end,:); ones(1,mc_time)*nan];
+pred_eps.lag4.sim_abs_eps = [pred_VR.sim_abs_eps(5:end,:); ones(4,mc_time)*nan];
+pred_eps.lag8.sim_abs_eps = [pred_VR.sim_abs_eps(9:end,:); ones(8,mc_time)*nan];
+
+pred_eps.lag1.mdl = fitlm(VR_data, pred_eps.lag1.real_abs_eps);
+pred_eps.lag4.mdl = fitlm(VR_data, pred_eps.lag4.real_abs_eps);
+pred_eps.lag8.mdl = fitlm(VR_data, pred_eps.lag8.real_abs_eps);
+
+pred_eps.lag1.a = pred_eps.lag1.mdl.Coefficients.Estimate(2);
+pred_eps.lag1.t = pred_eps.lag1.mdl.Coefficients.tStat(2);
+pred_eps.lag1.r_2 = pred_eps.lag1.mdl.Rsquared.Adjusted;
+
+pred_eps.lag4.a = pred_eps.lag4.mdl.Coefficients.Estimate(2);
+pred_eps.lag4.t = pred_eps.lag4.mdl.Coefficients.tStat(2);
+pred_eps.lag4.r_2 = pred_eps.lag4.mdl.Rsquared.Adjusted;
+
+pred_eps.lag8.a = pred_eps.lag8.mdl.Coefficients.Estimate(2);
+pred_eps.lag8.t = pred_eps.lag8.mdl.Coefficients.tStat(2);
+pred_eps.lag8.r_2 = pred_eps.lag8.mdl.Rsquared.Adjusted;
+
+<span class="keyword">for</span> i = 1:mc_time
+    [pred_eps.lag1.sim_t(i), pred_eps.lag1.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.sim_VR(:,i), pred_eps.lag1.sim_abs_eps(:,i)));
+    [pred_eps.lag4.sim_t(i), pred_eps.lag4.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.sim_VR(:,i), pred_eps.lag4.sim_abs_eps(:,i)));
+    [pred_eps.lag8.sim_t(i), pred_eps.lag8.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.sim_VR(:,i), pred_eps.lag8.sim_abs_eps(:,i)));
+<span class="keyword">end</span>
+
+pred_eps.lag1.sim_t_2_5 = quantile(pred_eps.lag1.sim_t, 0.025);
+pred_eps.lag1.sim_t_5 = quantile(pred_eps.lag1.sim_t, 0.05);
+pred_eps.lag1.sim_r_2_95 = quantile(pred_eps.lag1.sim_r_2, 0.95);
+
+pred_eps.lag4.sim_t_2_5 = quantile(pred_eps.lag4.sim_t, 0.025);
+pred_eps.lag4.sim_t_5 = quantile(pred_eps.lag4.sim_t, 0.05);
+pred_eps.lag4.sim_r_2_95 = quantile(pred_eps.lag4.sim_r_2, 0.95);
+
+pred_eps.lag8.sim_t_2_5 = quantile(pred_eps.lag8.sim_t, 0.025);
+pred_eps.lag8.sim_t_5 = quantile(pred_eps.lag8.sim_t, 0.05);
+pred_eps.lag8.sim_r_2_95 = quantile(pred_eps.lag8.sim_r_2, 0.95);
+</pre><h2>Robust check<a name="9"></a></h2><pre class="codeinput"><span class="keyword">if</span> nargin &lt;= 3 || ~robust_check
+    robust = nan;
+    <span class="keyword">return</span>;
+<span class="keyword">end</span>
+
+
+
+robust.log_v = log(ARGARCH_GR.v);
+robust.log_v_lag1 = [nan; log(ARGARCH_GR.v(1:end-1))];
+robust.VR_lag1 = [nan; VR_data(1:end-1)];
+
+robust.mdl1.mdl = fitlm(robust.log_v_lag1, VR_data);
+robust.mdl1.a1 = robust.mdl1.mdl.Coefficients.Estimate(2);
+robust.mdl1.t1 = robust.mdl1.mdl.Coefficients.tStat(2);
+robust.mdl1.r_2 = robust.mdl1.mdl.Rsquared.Adjusted;
+
+robust.mdl2.mdl = fitlm([robust.log_v_lag1, robust.VR_lag1], VR_data);
+robust.mdl2.a1 = robust.mdl2.mdl.Coefficients.Estimate(2);
+robust.mdl2.a2 = robust.mdl2.mdl.Coefficients.Estimate(3);
+robust.mdl2.t1 = robust.mdl2.mdl.Coefficients.tStat(2);
+robust.mdl2.t2 = robust.mdl2.mdl.Coefficients.tStat(3);
+robust.mdl2.r_2 = robust.mdl2.mdl.Rsquared.Adjusted;
+
+robust.mdl3.mdl = fitlm(robust.VR_lag1, robust.log_v);
+robust.mdl3.a1 = robust.mdl3.mdl.Coefficients.Estimate(2);
+robust.mdl3.t1 = robust.mdl3.mdl.Coefficients.tStat(2);
+robust.mdl3.r_2 = robust.mdl3.mdl.Rsquared.Adjusted;
+
+robust.mdl4.mdl = fitlm([robust.VR_lag1, robust.log_v_lag1], robust.log_v);
+robust.mdl4.a1 = robust.mdl4.mdl.Coefficients.Estimate(2);
+robust.mdl4.t1 = robust.mdl4.mdl.Coefficients.tStat(2);
+robust.mdl4.a2 = robust.mdl4.mdl.Coefficients.Estimate(3);
+robust.mdl4.t2 = robust.mdl4.mdl.Coefficients.tStat(3);
+robust.mdl4.r_2 = robust.mdl4.mdl.Rsquared.Adjusted;
+
+robust.sim_VR_lag1 = [nan*ones(1,mc_time); pred_VR.sim_VR(1:end-1,:)];
+<span class="keyword">for</span> i = 1:mc_time
+    [~, robust.sim_log_v(:,i)] = infer(estimate(ARGARCH_mdl, pred_VR.sim_GR(:,i), <span class="string">'Display'</span>, <span class="string">'off'</span>), pred_VR.sim_GR(:,i));
+<span class="keyword">end</span>
+robust.sim_log_v = log(robust.sim_log_v);
+robust.sim_log_v_lag1 = [nan*ones(1,mc_time); robust.sim_log_v(1:end-1,:)];
+
+robust.mdl1.sim_t1 = ones(mc_time,1)*nan;
+robust.mdl1.sim_r_2 = robust.mdl1.sim_t1;
+
+robust.mdl2.sim_t1 = robust.mdl1.sim_t1;
+robust.mdl2.sim_t2 = robust.mdl1.sim_t1;
+robust.mdl2.sim_r_2 = robust.mdl1.sim_t1;
+
+robust.mdl3.sim_t1 = robust.mdl1.sim_t1;
+robust.mdl3.sim_r_2 = robust.mdl1.sim_t1;
+
+robust.mdl4.sim_t1 = robust.mdl1.sim_t1;
+robust.mdl4.sim_t2 = robust.mdl1.sim_t1;
+robust.mdl4.sim_r_2 = robust.mdl1.sim_t1;
+
+<span class="keyword">for</span> i = 1:mc_time
+    [robust.mdl1.sim_t1(i), robust.mdl1.sim_r_2(i)] = Extract_lm(fitlm(robust.sim_log_v_lag1(:,i),pred_VR.sim_VR(:,i)));
+    [robust.mdl2.sim_t1(i), robust.mdl2.sim_r_2(i), robust.mdl2.sim_t2(i)] = Extract_lm(fitlm([robust.sim_log_v_lag1(:,i), robust.sim_VR_lag1(:,i)],pred_VR.sim_VR(:,i)));
+    [robust.mdl3.sim_t1(i), robust.mdl3.sim_r_2(i)] = Extract_lm(fitlm(robust.sim_VR_lag1(:,i), robust.sim_log_v(:,i)));
+    [robust.mdl4.sim_t1(i), robust.mdl4.sim_r_2(i), robust.mdl4.sim_t2(i)] = Extract_lm(fitlm([robust.sim_VR_lag1(:,i), robust.sim_log_v_lag1(:,i)], robust.sim_log_v(:,i)));
+<span class="keyword">end</span>
+
+robust.mdl1.sim_t1_2_5 = quantile(robust.mdl1.sim_t1, 0.025);
+robust.mdl1.sim_t1_5 = quantile(robust.mdl1.sim_t1, 0.05);
+robust.mdl1.sim_r_2_95 = quantile(robust.mdl1.sim_r_2, 0.95);
+robust.mdl1.sim_r_2_975 = quantile(robust.mdl1.sim_r_2, 0.975);
+
+robust.mdl2.sim_t1_2_5 = quantile(robust.mdl2.sim_t1, 0.025);
+robust.mdl2.sim_t1_5 = quantile(robust.mdl2.sim_t1, 0.05);
+robust.mdl2.sim_t2_2_5 = quantile(robust.mdl2.sim_t2, 0.025);
+robust.mdl2.sim_t2_5 = quantile(robust.mdl2.sim_t2, 0.05);
+robust.mdl2.sim_r_2_95 = quantile(robust.mdl2.sim_r_2, 0.95);
+robust.mdl2.sim_r_2_975 = quantile(robust.mdl2.sim_r_2, 0.975);
+
+robust.mdl3.sim_t1_2_5 = quantile(robust.mdl3.sim_t1, 0.025);
+robust.mdl3.sim_t1_5 = quantile(robust.mdl3.sim_t1, 0.05);
+robust.mdl3.sim_r_2_95 = quantile(robust.mdl3.sim_r_2, 0.95);
+robust.mdl3.sim_r_2_975 = quantile(robust.mdl3.sim_r_2, 0.975);
+
+robust.mdl4.sim_t1_2_5 = quantile(robust.mdl4.sim_t1, 0.025);
+robust.mdl4.sim_t1_5 = quantile(robust.mdl4.sim_t1, 0.05);
+robust.mdl4.sim_t2_2_5 = quantile(robust.mdl4.sim_t2, 0.025);
+robust.mdl4.sim_t2_5 = quantile(robust.mdl4.sim_t2, 0.05);
+robust.mdl4.sim_r_2_95 = quantile(robust.mdl4.sim_r_2, 0.95);
+robust.mdl4.sim_r_2_975 = quantile(robust.mdl4.sim_r_2, 0.975);
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2015b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [AR_GR, ARGARCH_GR, pred_VR, pred_eps, robust] = MC_predict_VR( VR_data, GR_data, mc_time, robust_check)
+% Summary of this function goes here
+%   VR for Valuation Ratio
+%   GR for growth rate of consumption or market return
+%   AR_GR is the estimation(coef, se, AC of abs_eps) for AR(1) of GR(growth rate)
+%   ARGARCH if the estimation(coef, se) for AR(1)-GARCH(1,1) of GR
+%
+% Output options:
+%
+%   AR_GR: the AR(1) model for GR(growth)
+%       _AR_GR.mdl: the estimation of AR_GR
+%       -AR_GR.coef: the estimate of the coef(const, AR(1))
+%       -AR_GR.se: the standard error of  the estimation(const, AR(1))
+%       -AR_GR.AC: the Autocorrelation of absolute eps in lag 1,4,8
+%       -AR_GR.Q: the lbqt result of absolute eps
+%           -AR_GR.Q.h: the hypothesis test result of lbqt
+%           -AR_GR.Q.p: the p-value result of lbqt
+%           -AR_GR.Q.stat: the Q-stat result of lbqt
+%       -AR_GR.eps
+%       -AR_GR.abs_eps_lag1,lag4,lag8,lag12
+%
+%   ARGARCH_GR: the AR(1)-GARCH(1,1) model for GR(growth)
+%       -ARGARCH_GR.coef: the estimate of the coef(const,AR(1)-GARCH(1,1),var_const,ARCH,GARCH)
+%       -ARGARCH_GR.se: the standard error of  the estimation(const,AR(1)-GARCH(1,1),var_const,ARCH,GARCH)
+%
+%
+
+AR_mdl = arima('ARLags', 1);
+ARGARCH_mdl = arima('ARLags',1,'Variance',garch(1,1));
+
+%% (1) estimate g_c or r_m of AR(1) and examine the AC of absolute residuals
+
+[AR_GR.mdl, AR_GR.vcov] = estimate(AR_mdl, GR_data);
+AR_GR.coef = [AR_GR.mdl.Constant; AR_GR.mdl.AR{1}]; % coef
+AR_GR.se = sqrt([AR_GR.vcov(1,1); AR_GR.vcov(2,2)]); % se
+
+% infer absolute residuals
+[AR_GR.eps, AR_GR.v] = infer(AR_GR.mdl, GR_data);
+AR_GR.abs_eps = abs(AR_GR.eps);
+
+AC_AR = autocorr(AR_GR.abs_eps,8);
+AR_GR.AC = AC_AR([2,5,8]);
+[AR_GR.Q.h, AR_GR.Q.p, AR_GR.Q.stat] = lbqtest(abs(AR_GR.abs_eps),'lags',[1,4,8]);
+
+%% (2) estimate g_c or r_m of AR(1)-GARCH(1,1)
+
+[ARGARCH_GR.mdl, ARGARCH_GR.vcov] = estimate(ARGARCH_mdl, GR_data);
+ARGARCH_GR.coef = [ARGARCH_GR.mdl.Constant; ARGARCH_GR.mdl.AR{1}; ARGARCH_GR.mdl.Variance.Constant; ARGARCH_GR.mdl.Variance.ARCH{1}; ARGARCH_GR.mdl.Variance.GARCH{1}]; % coef
+ARGARCH_GR.se = sqrt([ARGARCH_GR.vcov(1,1); ARGARCH_GR.vcov(2,2);  ARGARCH_GR.vcov(3,3);  ARGARCH_GR.vcov(5,5);  ARGARCH_GR.vcov(4,4)]); % se
+[ARGARCH_GR.eps, ARGARCH_GR.v] = infer(ARGARCH_GR.mdl, GR_data);
+
+%% (3) estimate prediction model of future valuation ratios
+
+
+
+% construct economic uncertainty
+
+
+AR_GR.sigma_lag1 = [nan; gen_sigma_J(AR_GR.abs_eps, 1)];
+AR_GR.sigma_lag4 = [nan*ones(4,1); gen_sigma_J(AR_GR.abs_eps, 4)];
+AR_GR.sigma_lag8 = [nan*ones(8,1); gen_sigma_J(AR_GR.abs_eps, 8)];
+AR_GR.sigma_lag12 = [nan*ones(12,1); gen_sigma_J(AR_GR.abs_eps, 12)];
+
+pred_VR.lag1.mdl = fitlm(AR_GR.sigma_lag1,VR_data);
+pred_VR.lag4.mdl = fitlm(AR_GR.sigma_lag4,VR_data);
+pred_VR.lag8.mdl = fitlm(AR_GR.sigma_lag8,VR_data);
+
+pred_VR.lag1.b = pred_VR.lag1.mdl.Coefficients.Estimate(2);
+pred_VR.lag1.t = pred_VR.lag1.mdl.Coefficients.tStat(2);
+pred_VR.lag1.r_2 = pred_VR.lag1.mdl.Rsquared.Adjusted;
+
+pred_VR.lag4.b = pred_VR.lag4.mdl.Coefficients.Estimate(2);
+pred_VR.lag4.t = pred_VR.lag4.mdl.Coefficients.tStat(2);
+pred_VR.lag4.r_2 = pred_VR.lag4.mdl.Rsquared.Adjusted;
+
+pred_VR.lag8.b = pred_VR.lag8.mdl.Coefficients.Estimate(2);
+pred_VR.lag8.t = pred_VR.lag8.mdl.Coefficients.tStat(2);
+pred_VR.lag8.r_2 = pred_VR.lag8.mdl.Rsquared.Adjusted;
+
+%% (4) simulate  GR from AR(1)-GARCH(1,1)
+
+
+
+pred_VR.sim_GR = simulate(ARGARCH_GR.mdl,length(GR_data)-1, 'Y0', GR_data(1), 'E0', ARGARCH_GR.eps(1), 'V0', ARGARCH_GR.v(1),'NumPaths',mc_time);
+pred_VR.sim_GR = [ones(1,mc_time) *GR_data(1); pred_VR.sim_GR];
+
+pred_VR.sim_abs_eps = ones(size(pred_VR.sim_GR))*nan;
+pred_VR.sim_v = pred_VR.sim_abs_eps;
+pred_VR.lag1.sim_sigma = pred_VR.sim_abs_eps;
+pred_VR.lag4.sim_sigma = pred_VR.sim_abs_eps;
+pred_VR.lag8.sim_sigma = pred_VR.sim_abs_eps;
+
+for i = 1:mc_time
+    pred_VR.sim_abs_eps(:,i) = abs(infer(estimate(AR_mdl, pred_VR.sim_GR(:,i), 'Display', 'off'), pred_VR.sim_GR(:,i)));
+    pred_VR.lag1.sim_sigma(:,i) = [nan; gen_sigma_J(pred_VR.sim_abs_eps(:,i), 1)];
+    pred_VR.lag4.sim_sigma(:,i) = [nan*ones(4,1); gen_sigma_J(pred_VR.sim_abs_eps(:,i), 4)];
+    pred_VR.lag8.sim_sigma(:,i) = [nan*ones(8,1); gen_sigma_J(pred_VR.sim_abs_eps(:,i), 8)];
+end
+
+
+
+
+
+
+
+
+
+%% Simulate price-earing( price-dividend) ratio
+
+pred_VR.AR_VR.mdl = estimate(AR_mdl, VR_data, 'Display', 'off');
+[pred_VR.AR_VR.eps, pred_VR.AR_VR.v] = infer(pred_VR.AR_VR.mdl, VR_data);
+
+pred_VR.sim_VR = simulate(pred_VR.AR_VR.mdl, length(GR_data)-1,'Y0', VR_data(1), 'E0', pred_VR.AR_VR.eps(1), 'V0', pred_VR.AR_VR.v(1),'NumPaths',mc_time);
+pred_VR.sim_VR = [ones(1,mc_time)*VR_data(1); pred_VR.sim_VR];
+
+pred_VR.lag1.sim_t = pred_VR.lag1.mdl.Coefficients.Estimate(2);
+pred_VR.lag1.sim_r_2 = pred_VR.lag1.mdl.Coefficients.tStat(2);
+
+pred_VR.lag1.sim_t = nan*zeros(1,mc_time);
+pred_VR.lag4.sim_t = pred_VR.lag1.sim_t;
+pred_VR.lag8.sim_t = pred_VR.lag1.sim_t;
+
+pred_VR.lag1.sim_r_2 = pred_VR.lag1.sim_t;
+pred_VR.lag4.sim_r_2 = pred_VR.lag1.sim_t;
+pred_VR.lag8.sim_r_2 = pred_VR.lag1.sim_t;
+
+
+for i = 1:mc_time
+    [pred_VR.lag1.sim_t(i), pred_VR.lag1.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.lag1.sim_sigma(:,i),pred_VR.sim_VR(:,i)));
+    [pred_VR.lag4.sim_t(i), pred_VR.lag4.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.lag4.sim_sigma(:,i),pred_VR.sim_VR(:,i)));
+    [pred_VR.lag8.sim_t(i), pred_VR.lag8.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.lag8.sim_sigma(:,i),pred_VR.sim_VR(:,i)));
+end
+
+pred_VR.lag1.sim_t_2_5 = quantile(pred_VR.lag1.sim_t, 0.025);
+pred_VR.lag1.sim_t_5 = quantile(pred_VR.lag1.sim_t, 0.05);
+pred_VR.lag1.sim_r_2_95 = quantile(pred_VR.lag1.sim_r_2, 0.95);
+
+pred_VR.lag4.sim_t_2_5 = quantile(pred_VR.lag4.sim_t, 0.025);
+pred_VR.lag4.sim_t_5 = quantile(pred_VR.lag4.sim_t, 0.05);
+pred_VR.lag4.sim_r_2_95 = quantile(pred_VR.lag4.sim_r_2, 0.95);
+
+pred_VR.lag8.sim_t_2_5 = quantile(pred_VR.lag8.sim_t, 0.025);
+pred_VR.lag8.sim_t_5 = quantile(pred_VR.lag8.sim_t, 0.05);
+pred_VR.lag8.sim_r_2_95 = quantile(pred_VR.lag8.sim_r_2, 0.95);
+
+
+
+%% Predict abs_eps
+
+pred_eps.lag1.real_abs_eps = [AR_GR.abs_eps(2:end); nan];
+pred_eps.lag4.real_abs_eps = [AR_GR.abs_eps(5:end); ones(4,1)*nan];
+pred_eps.lag8.real_abs_eps = [AR_GR.abs_eps(9:end); ones(8,1)*nan];
+
+pred_eps.lag1.sim_abs_eps = [pred_VR.sim_abs_eps(2:end,:); ones(1,mc_time)*nan];
+pred_eps.lag4.sim_abs_eps = [pred_VR.sim_abs_eps(5:end,:); ones(4,mc_time)*nan];
+pred_eps.lag8.sim_abs_eps = [pred_VR.sim_abs_eps(9:end,:); ones(8,mc_time)*nan];
+
+pred_eps.lag1.mdl = fitlm(VR_data, pred_eps.lag1.real_abs_eps);
+pred_eps.lag4.mdl = fitlm(VR_data, pred_eps.lag4.real_abs_eps);
+pred_eps.lag8.mdl = fitlm(VR_data, pred_eps.lag8.real_abs_eps);
+
+pred_eps.lag1.a = pred_eps.lag1.mdl.Coefficients.Estimate(2);
+pred_eps.lag1.t = pred_eps.lag1.mdl.Coefficients.tStat(2);
+pred_eps.lag1.r_2 = pred_eps.lag1.mdl.Rsquared.Adjusted;
+
+pred_eps.lag4.a = pred_eps.lag4.mdl.Coefficients.Estimate(2);
+pred_eps.lag4.t = pred_eps.lag4.mdl.Coefficients.tStat(2);
+pred_eps.lag4.r_2 = pred_eps.lag4.mdl.Rsquared.Adjusted;
+
+pred_eps.lag8.a = pred_eps.lag8.mdl.Coefficients.Estimate(2);
+pred_eps.lag8.t = pred_eps.lag8.mdl.Coefficients.tStat(2);
+pred_eps.lag8.r_2 = pred_eps.lag8.mdl.Rsquared.Adjusted;
+
+for i = 1:mc_time
+    [pred_eps.lag1.sim_t(i), pred_eps.lag1.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.sim_VR(:,i), pred_eps.lag1.sim_abs_eps(:,i)));
+    [pred_eps.lag4.sim_t(i), pred_eps.lag4.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.sim_VR(:,i), pred_eps.lag4.sim_abs_eps(:,i)));
+    [pred_eps.lag8.sim_t(i), pred_eps.lag8.sim_r_2(i)] = Extract_lm(fitlm(pred_VR.sim_VR(:,i), pred_eps.lag8.sim_abs_eps(:,i)));
+end
+
+pred_eps.lag1.sim_t_2_5 = quantile(pred_eps.lag1.sim_t, 0.025);
+pred_eps.lag1.sim_t_5 = quantile(pred_eps.lag1.sim_t, 0.05);
+pred_eps.lag1.sim_r_2_95 = quantile(pred_eps.lag1.sim_r_2, 0.95);
+
+pred_eps.lag4.sim_t_2_5 = quantile(pred_eps.lag4.sim_t, 0.025);
+pred_eps.lag4.sim_t_5 = quantile(pred_eps.lag4.sim_t, 0.05);
+pred_eps.lag4.sim_r_2_95 = quantile(pred_eps.lag4.sim_r_2, 0.95);
+
+pred_eps.lag8.sim_t_2_5 = quantile(pred_eps.lag8.sim_t, 0.025);
+pred_eps.lag8.sim_t_5 = quantile(pred_eps.lag8.sim_t, 0.05);
+pred_eps.lag8.sim_r_2_95 = quantile(pred_eps.lag8.sim_r_2, 0.95);
+
+
+
+%% Robust check
+
+if nargin <= 3 || ~robust_check
+    robust = nan;
+    return;
+end
+
+
+
+robust.log_v = log(ARGARCH_GR.v);
+robust.log_v_lag1 = [nan; log(ARGARCH_GR.v(1:end-1))];
+robust.VR_lag1 = [nan; VR_data(1:end-1)];
+
+robust.mdl1.mdl = fitlm(robust.log_v_lag1, VR_data);
+robust.mdl1.a1 = robust.mdl1.mdl.Coefficients.Estimate(2);
+robust.mdl1.t1 = robust.mdl1.mdl.Coefficients.tStat(2);
+robust.mdl1.r_2 = robust.mdl1.mdl.Rsquared.Adjusted;
+
+robust.mdl2.mdl = fitlm([robust.log_v_lag1, robust.VR_lag1], VR_data);
+robust.mdl2.a1 = robust.mdl2.mdl.Coefficients.Estimate(2);
+robust.mdl2.a2 = robust.mdl2.mdl.Coefficients.Estimate(3);
+robust.mdl2.t1 = robust.mdl2.mdl.Coefficients.tStat(2);
+robust.mdl2.t2 = robust.mdl2.mdl.Coefficients.tStat(3);
+robust.mdl2.r_2 = robust.mdl2.mdl.Rsquared.Adjusted;
+
+robust.mdl3.mdl = fitlm(robust.VR_lag1, robust.log_v);
+robust.mdl3.a1 = robust.mdl3.mdl.Coefficients.Estimate(2);
+robust.mdl3.t1 = robust.mdl3.mdl.Coefficients.tStat(2);
+robust.mdl3.r_2 = robust.mdl3.mdl.Rsquared.Adjusted;
+
+robust.mdl4.mdl = fitlm([robust.VR_lag1, robust.log_v_lag1], robust.log_v);
+robust.mdl4.a1 = robust.mdl4.mdl.Coefficients.Estimate(2);
+robust.mdl4.t1 = robust.mdl4.mdl.Coefficients.tStat(2);
+robust.mdl4.a2 = robust.mdl4.mdl.Coefficients.Estimate(3);
+robust.mdl4.t2 = robust.mdl4.mdl.Coefficients.tStat(3);
+robust.mdl4.r_2 = robust.mdl4.mdl.Rsquared.Adjusted;
+
+robust.sim_VR_lag1 = [nan*ones(1,mc_time); pred_VR.sim_VR(1:end-1,:)];
+for i = 1:mc_time
+    [~, robust.sim_log_v(:,i)] = infer(estimate(ARGARCH_mdl, pred_VR.sim_GR(:,i), 'Display', 'off'), pred_VR.sim_GR(:,i)); 
+end
+robust.sim_log_v = log(robust.sim_log_v);
+robust.sim_log_v_lag1 = [nan*ones(1,mc_time); robust.sim_log_v(1:end-1,:)];
+
+robust.mdl1.sim_t1 = ones(mc_time,1)*nan;
+robust.mdl1.sim_r_2 = robust.mdl1.sim_t1;
+
+robust.mdl2.sim_t1 = robust.mdl1.sim_t1;
+robust.mdl2.sim_t2 = robust.mdl1.sim_t1;
+robust.mdl2.sim_r_2 = robust.mdl1.sim_t1;
+
+robust.mdl3.sim_t1 = robust.mdl1.sim_t1;
+robust.mdl3.sim_r_2 = robust.mdl1.sim_t1;
+
+robust.mdl4.sim_t1 = robust.mdl1.sim_t1;
+robust.mdl4.sim_t2 = robust.mdl1.sim_t1;
+robust.mdl4.sim_r_2 = robust.mdl1.sim_t1;
+
+for i = 1:mc_time
+    [robust.mdl1.sim_t1(i), robust.mdl1.sim_r_2(i)] = Extract_lm(fitlm(robust.sim_log_v_lag1(:,i),pred_VR.sim_VR(:,i)));
+    [robust.mdl2.sim_t1(i), robust.mdl2.sim_r_2(i), robust.mdl2.sim_t2(i)] = Extract_lm(fitlm([robust.sim_log_v_lag1(:,i), robust.sim_VR_lag1(:,i)],pred_VR.sim_VR(:,i)));
+    [robust.mdl3.sim_t1(i), robust.mdl3.sim_r_2(i)] = Extract_lm(fitlm(robust.sim_VR_lag1(:,i), robust.sim_log_v(:,i)));
+    [robust.mdl4.sim_t1(i), robust.mdl4.sim_r_2(i), robust.mdl4.sim_t2(i)] = Extract_lm(fitlm([robust.sim_VR_lag1(:,i), robust.sim_log_v_lag1(:,i)], robust.sim_log_v(:,i)));
+end
+
+robust.mdl1.sim_t1_2_5 = quantile(robust.mdl1.sim_t1, 0.025);
+robust.mdl1.sim_t1_5 = quantile(robust.mdl1.sim_t1, 0.05);
+robust.mdl1.sim_r_2_95 = quantile(robust.mdl1.sim_r_2, 0.95);
+robust.mdl1.sim_r_2_975 = quantile(robust.mdl1.sim_r_2, 0.975);
+
+robust.mdl2.sim_t1_2_5 = quantile(robust.mdl2.sim_t1, 0.025);
+robust.mdl2.sim_t1_5 = quantile(robust.mdl2.sim_t1, 0.05);
+robust.mdl2.sim_t2_2_5 = quantile(robust.mdl2.sim_t2, 0.025);
+robust.mdl2.sim_t2_5 = quantile(robust.mdl2.sim_t2, 0.05);
+robust.mdl2.sim_r_2_95 = quantile(robust.mdl2.sim_r_2, 0.95);
+robust.mdl2.sim_r_2_975 = quantile(robust.mdl2.sim_r_2, 0.975);
+
+robust.mdl3.sim_t1_2_5 = quantile(robust.mdl3.sim_t1, 0.025);
+robust.mdl3.sim_t1_5 = quantile(robust.mdl3.sim_t1, 0.05);
+robust.mdl3.sim_r_2_95 = quantile(robust.mdl3.sim_r_2, 0.95);
+robust.mdl3.sim_r_2_975 = quantile(robust.mdl3.sim_r_2, 0.975);
+
+robust.mdl4.sim_t1_2_5 = quantile(robust.mdl4.sim_t1, 0.025);
+robust.mdl4.sim_t1_5 = quantile(robust.mdl4.sim_t1, 0.05);
+robust.mdl4.sim_t2_2_5 = quantile(robust.mdl4.sim_t2, 0.025);
+robust.mdl4.sim_t2_5 = quantile(robust.mdl4.sim_t2, 0.05);
+robust.mdl4.sim_r_2_95 = quantile(robust.mdl4.sim_r_2, 0.95);
+robust.mdl4.sim_r_2_975 = quantile(robust.mdl4.sim_r_2, 0.975);
+
+
+
+
+
+
+##### SOURCE END #####
+--></body></html>

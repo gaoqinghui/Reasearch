@@ -1,0 +1,19 @@
+There are two folders, one is CRSP, the other is NIPA.
+1. In CRSP, CRSP.xls is the monthly data, CRSP1.xls is the quarterly data.
+2. In NIPA, files with suffix 'Hist' are data between 1930 and 1969, files without suffix 'Hist' are data between 1969 and 2016.
+
+
+Here is the data description corresponding to the Appedix in the paper.
+
+1. P: Total market value ('CRSP.xls' and 'CRSP1.xls', column 4)
+2. VWRETX: Value weighted return on NYSE/AMEX excluding dividends ('CRSP.xls' and 'CRSP1.xls', column 3)
+2. VWRETD: Value weighted return on NYSE/AMEX including dividends ('CRSP.xls' and 'CRSP1.xls', column 2)
+3. E: Corporate profits (earings) after tax ('Section1All_Hist.xls' and 'Section1all_xls.xls', sheet:'11400 Qtr', line 22)
+4. C: Consumption of non-durables and services
+   Consumption of non-durables ('Section1All_Hist.xls' and 'Section1all_xls.xls', sheet:'10105 Qtr', line 14)
+   Consumption of services ('Section1All_Hist.xls' and 'Section1all_xls.xls', sheet:'10105 Qtr', line 15)
+5. Deflator of non-durables consumption and services
+   Per capita non-durable goods in current dollars ('Section7All_Hist.xls' and 'Section7all_xls.xls', sheet:'70100 Qtr', line 18)
+   Per capita Services in current dollars ('Section7All_Hist.xls' and 'Section7all_xls.xls', sheet:'70100 Qtr', line 19)
+   Per capita non-durable goods in chained (2009) dollars ('Section7All_Hist.xls' and 'Section7all_xls.xls', sheet:'70100 Qtr', line 27)
+   Per capita Services in chained (2009) dollars ('Section7All_Hist.xls' and 'Section7all_xls.xls', sheet:'70100 Qtr', line 28)

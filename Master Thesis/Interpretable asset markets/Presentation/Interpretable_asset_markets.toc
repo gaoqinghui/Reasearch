@@ -1,0 +1,9 @@
+\beamer@sectionintoc {2}{Introduction}{3}{0}{1}
+\beamer@subsectionintoc {2}{1}{Overview of the Beamer Class}{3}{0}{1}
+\beamer@subsectionintoc {2}{2}{Overview of Similar Classes}{3}{0}{1}
+\beamer@sectionintoc {3}{Usage}{3}{0}{2}
+\beamer@subsectionintoc {3}{1}{...}{3}{0}{2}
+\beamer@subsectionintoc {3}{2}{...}{3}{0}{2}
+\beamer@sectionintoc {4}{Examples}{3}{0}{3}
+\beamer@subsectionintoc {4}{1}{...}{3}{0}{3}
+\beamer@subsectionintoc {4}{2}{...}{3}{0}{3}

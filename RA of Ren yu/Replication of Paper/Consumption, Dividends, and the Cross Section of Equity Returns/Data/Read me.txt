@@ -1,0 +1,42 @@
+
+CRSP Portfolios on the S&P 500.xlsx
+月度数据，更新至2016年12月。
+包含：Value-Weighted Return-incl. dividends；Value-Weighted Return-excl. dividends；Equal-Weighted Return-incl. dividends；Equal-Weighted Return-excl. dividends
+
+
+Personal Consumption Expenditures.xlsx
+季度数据，更新至2017年第三季度。
+包含：
+U20304
+Table 2.3.4U. Price Indexes for Personal Consumption Expenditures by Major Type of Product and by Major Function
+U20305
+Table 2.3.5U. Personal Consumption Expenditures by Major Type of Product and by Major Function
+U20306
+Table 2.3.6U. Real Personal Consumption Expenditures by Major Type of Product and by Major Function
+U20403
+Table 2.4.3U. Real Personal Consumption Expenditures by Type of Product, Quantity Indexes
+U20404
+Table 2.4.4U. Price Indexes for Personal Consumption Expenditures by Type of Product
+U20405
+Table 2.4.5U. Personal Consumption Expenditures by Type of Product
+U20406
+Table 2.4.6U. Real Personal Consumption Expenditures by Type of Product, Chained Dollars
+
+
+portfolios formed on momentum.csv
+月度数据，更新至2017年10月
+
+portfolios formed on size.csv
+月度数据，更新至2017年10月
+
+portfolios_formed on book-to-matket.csv
+月度数据，更新至2017年10月
+
+Real personal consumption expenditures per capita.csv
+季度数据，更新至2017年第一季度
+
+the excess return on then value-weighted market portfolio.csv
+月度数据，更新至2017年10月
+
+US Treasury and Inflation(quarterly).xlsx
+季度数据，更新至2016年12月

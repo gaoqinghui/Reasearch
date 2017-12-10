@@ -1,0 +1,12 @@
+\select@language {english}
+\beamer@sectionintoc {1}{Motivation}{3}{0}{1}
+\beamer@sectionintoc {2}{Literature Review}{4}{0}{2}
+\beamer@sectionintoc {3}{Framework and Approach}{5}{0}{3}
+\beamer@sectionintoc {4}{Empirical Evidence - Volatility implications}{10}{0}{4}
+\beamer@subsectionintoc {4}{1}{Consumption Dynamics and volatility}{11}{0}{4}
+\beamer@subsectionintoc {4}{2}{Economic uncertainty and asset valuations}{14}{0}{4}
+\beamer@subsectionintoc {4}{3}{Valuation ratios predict economic uncertainty}{16}{0}{4}
+\beamer@subsectionintoc {4}{4}{GARCH consumption volatility and robustness}{19}{0}{4}
+\beamer@sectionintoc {5}{Additional implications and empirical evidence}{21}{0}{5}
+\beamer@subsectionintoc {5}{1}{Growth rate and return predictability}{21}{0}{5}
+\beamer@sectionintoc {6}{Conclusion}{25}{0}{6}
